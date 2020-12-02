@@ -6,16 +6,17 @@ from . import keyword
 from .models import StatisticValues, RegionLarge, RegionMedium, Subscriber
 from .forms import SubscirberForm
 from datetime import datetime
+from . import LocationInfo
 import json
 
 def index(request):
     #============================================ Start of 'contents-home.html' ====================================================
     #통계 받아오는 API로 가져옴
-    result = keyword.keywordFindAPI() 
+    result = keyword.keywordFindAPI()
     #print(result)
-     #context는 html에 data로 넘겨주는 parameter들을 담는것. 각각의 값을 전달한다
-     #예를 들어 context에 result, result2, result3 이렇게 넣어서 전달하면
-     #index.html에서 result, result2, result3 변수를 html 태그나 javascript코드 등에서 사용 가능하다.
+    #context는 html에 data로 넘겨주는 parameter들을 담는것. 각각의 값을 전달한다
+    #예를 들어 context에 result, result2, result3 이렇게 넣어서 전달하면
+    #index.html에서 result, result2, result3 변수를 html 태그나 javascript코드 등에서 사용 가능하다.
     
     '''
     statisticDB = StatisticValues.objects.all() # 테이블 데이타를 전부 가져오기 위한 메소드
@@ -34,13 +35,13 @@ def index(request):
         #                     notcaseCount = request.POST['notcaseCount'])
         
         YEAR= datetime.today().year        # 현재 연도 가져오기
-        #print(YEAR)
-        MONTH= datetime.today().month      # 현재 월 가져오기
-        #print(MONTH)
-        DAY= datetime.today().day        # 현재 일 가져오기
+        # #print(YEAR)
+        # MONTH= datetime.today().month      # 현재 월 가져오기
+        # #print(MONTH)
+        # DAY= datetime.today().day        # 현재 일 가져오기
         #print(DAY)
-        TodayDate=str(YEAR)+"."+str(MONTH)+"."+str(DAY)
-        print(TodayDate)
+        #TodayDate=str(YEAR)+"."+str(MONTH)+"."+str(DAY)
+        #print(TodayDate)
         # if statisticDB.objects.get(updateTime=TodayDate).updateTime != TodayDate:
         #if not statisticDB.objects.filter(updateTime=TodayDate).exists(): 
         statisticValue = StatisticValues(updateTime = str(YEAR)+"."+result['updateTime'][23:28], 
@@ -50,7 +51,8 @@ def index(request):
                              TodayCase = result['data0_1'], TodayRecovered =result['TodayRecovered'])
         statisticValue.save()
         
-    except :
+    except Exception as e:
+        print(e)
         statisticValue  = None
     # updateTime # 정보 업데이트 시간 data['updateTime'][23:28] -> 월.일(00.00 구조)
 
@@ -60,11 +62,22 @@ def index(request):
     #print(statisticDBValues)
     #print(statisticValue)
     #=============================================== End of 'contents-home.html' ========================================================
-
-
-    #============================================ Start of 'contents-subscribe.html' ====================================================
+    #============================================ Start of 'contents-statistics.html' ===================================================
     largeRegions = RegionLarge.objects.all()
     largeRegionsValues = serializers.serialize('json', largeRegions)
+    #============================================= End of 'contents-statistics.html' ====================================================
+    #============================================= Start of 'content-mapview.html' ======================================================
+    locationset = LocationInfo.get_location(result)
+    seoul_gu_results = LocationInfo.scraping_data()
+    patient_pathes = LocationInfo.get_patient_path()
+    print(patient_pathes)
+    #============================================= End of 'content-mapview.html' ========================================================
+    #============================================ Start of 'contents-subscribe.html' ====================================================
+    # duplicate
+    '''
+    largeRegions = RegionLarge.objects.all()
+    largeRegionsValues = serializers.serialize('json', largeRegions)
+    '''
     mediumRegions = RegionMedium.objects.all()
     mediumRegionsValues = serializers.serialize('json', mediumRegions)
     #============================================= End of 'contents-subscribe.html' =====================================================
@@ -72,8 +85,14 @@ def index(request):
         # contents-home
         'result' : result,
         'statisticDBValues': statisticDBValues,
-        # contents-subscribe
+        # contents-statistics
         'largeRegions': largeRegionsValues,
+        # contents-mapview
+        'locationset' : locationset,
+        'seoul_gu_result' : seoul_gu_results,
+        'patient_pathes' : patient_pathes,
+        # contents-subscribe
+        # 'largeRegions': largeRegionsValues, # duplicate
         'mediumRegions': mediumRegionsValues
     }
     return render(request, 'index.html', context)
@@ -159,6 +178,4 @@ def mapview(request):
     except :
         Subscribedatas  = None
     return render(request, 'contents-subscribe.html', context) # render는 view에서 템플릿에 전달할 데이타를 Dictionary로 전달한다
-
 '''
-
